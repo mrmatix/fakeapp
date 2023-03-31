@@ -4,12 +4,15 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 import numpy as np
 import requests
 from bs4 import BeautifulSoup
+import webbrowser
 
 # Load the XGB model
 model = joblib.load('model/xgb.joblib')
 
 # Load the TfidfVectorizer object used during training
 vectorizer = joblib.load('vectorizer/tfidf.joblib')
+
+webbrowser.BackgroundBrowser("C:/Program Files/Mozilla Firefox/firefox.exe")
 
 
 def preprocess_text(text):
@@ -49,6 +52,7 @@ def search_reuters(query):
             print(link['href'])
     else:
         print(f"No articles found related to '{query}'.")
+    webbrowser.open_new_tab(url)
 
 
 def search_bbc(query):
@@ -63,7 +67,8 @@ def search_bbc(query):
     soup = BeautifulSoup(response.content, 'html.parser')
 
     # Find all the article links in the search results
-    article_links = soup.find_all('a', {'class': 'search-result-title'})
+    article_links = soup.find_all(
+        'a', {'class': 'ssrcss-6arcww-PromoHeadline e1f5wbog5'})
 
     # Print the article links
     if article_links:
@@ -72,6 +77,7 @@ def search_bbc(query):
             print(link['href'])
     else:
         print(f"No articles found related to '{query}'.")
+    webbrowser.open_new_tab(url)
 
 
 while True:
@@ -102,6 +108,14 @@ while True:
 
     # Print the preds to check the model prediction DEBUG
     print(f"preds = {preds}")
+
+    print("printing the probability of the prediction")
+    # Print the probability of the prediction
+    print(model.predict_proba(input_vector))
+
+    print("printing the prediction")
+    # Print the prediction
+    print(model.predict(input_vector))
 
     # Print the prediction
     if preds[0] < 0.7:
