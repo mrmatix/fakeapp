@@ -31,6 +31,8 @@ def preprocess_text(text):
 
     return clean_text
 
+# function for searching bbc
+
 
 def search_reuters(query):
     # Format the query for the Reuters search URL
@@ -62,6 +64,45 @@ def search_reuters(query):
     else:
         print(f"No articles found related to '{query}'.")
 
+# function for searching bbc
+
+
+def search_bbc(query):
+    # Format the query for the BBC search URL
+    query = query.replace(' ', '+')
+
+    # Send a GET request to the BBC search URL
+    url = f'https://www.bbc.co.uk/search?q={query}&d=HOMEPAGE_GNL'
+    response = requests.get(url)
+
+    # Parse the HTML content using BeautifulSoup
+    soup = BeautifulSoup(response.content, 'html.parser')
+
+    # Print response.content to see the HTML content DEBUG
+    # print(soup)
+
+    # Find all the article links in the search results
+    article_links = soup.find_all(
+        'a', {'class': 'ssrcss-rl2iw9-PromoLink e1f5wbog1'})
+
+    # Print the number of articles found
+    num_articles = len(article_links)
+    if num_articles:
+        print(f"Found {num_articles} articles related to '{query}':")
+        print("Opening the first article in a new tab and the search results in another...")
+
+        # Open the search results in the default browser
+        webbrowser.open_new_tab(url)
+
+        # Open the first article in a new tab
+        article_url = article_links[0]['href']
+        print(f"Opening URL: {article_url}")
+        webbrowser.open_new_tab(article_url)
+    else:
+        print(f"No articles found related to '{query}'.")
+
+# function for searching google
+
 
 def search_google(query):
     # Perform a Google search for the query
@@ -81,42 +122,6 @@ def search_google(query):
         search_result_url = search_results[0]
         print(f"Opening URL: {search_result_url}")
         webbrowser.open_new_tab(search_result_url)
-    else:
-        print(f"No search results found related to '{query}'.")
-
-
-def search_google(query):
-    # Format the query for the Google search URL
-    query = query.replace(' ', '+')
-
-    # Send a GET request to the Google search URL
-    url = f'https://www.google.com/search?q={query}'
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36'
-    }
-    response = requests.get(url, headers=headers)
-
-    # Parse the HTML content using BeautifulSoup
-    soup = BeautifulSoup(response.content, 'html.parser')
-
-    # Find all the search result links in the search results
-    search_result_links = soup.select('div.g > div > div.rc > div.r > a[href]')
-
-    # Print the number of search results found
-    num_results = len(search_result_links)
-    if num_results:
-        print(f"Found {num_results} search results related to '{query}':")
-        print("Opening the first search result in a new tab and the search results in another...")
-
-        # Open the search results in the default browser
-        webbrowser.open_new_tab(url)
-
-        # Open the first search result in a new tab
-        href = search_result_links[0]['href']
-        if href.startswith('/url?q='):
-            href = href[7:]
-        print(f"Opening URL: {href}")
-        webbrowser.open_new_tab(href)
     else:
         print(f"No search results found related to '{query}'.")
 
