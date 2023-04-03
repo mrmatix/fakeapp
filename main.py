@@ -5,9 +5,10 @@ import numpy as np
 import requests
 from bs4 import BeautifulSoup
 import webbrowser
+from googlesearch import search
 
-# Load the XGB model
-model = joblib.load('model/xgb.joblib')
+# Load the model
+model = joblib.load('model/gnv.joblib')
 
 # Load the TfidfVectorizer object used during training
 vectorizer = joblib.load('vectorizer/tfidf.joblib')
@@ -43,41 +44,81 @@ def search_reuters(query):
     soup = BeautifulSoup(response.content, 'html.parser')
 
     # Find all the article links in the search results
-    article_links = soup.find_all('a', {'class': 'search-result-title'})
+    article_links = soup.select('h3.search-result-title > a')
 
-    # Print the article links
-    if article_links:
-        print(f"Found {len(article_links)} articles related to '{query}':")
-        for link in article_links:
-            print(link['href'])
+    # Print the number of articles found
+    num_articles = len(article_links)
+    if num_articles:
+        print(f"Found {num_articles} articles related to '{query}':")
+        print("Opening the first article in a new tab and the search results in another...")
+
+        # Open the search results in the default browser
+        webbrowser.open_new_tab(url)
+
+        # Open the first article in a new tab
+        article_url = "https://www.reuters.com" + article_links[0]['href']
+        print(f"Opening URL: {article_url}")
+        webbrowser.open_new_tab(article_url)
     else:
         print(f"No articles found related to '{query}'.")
-    webbrowser.open_new_tab(url)
 
 
-def search_bbc(query):
-    # Format the query for the Reuters search URL
+def search_google(query):
+    # Perform a Google search for the query
+    search_results = list(search(query, num_results=10))
+
+    # Print the number of search results found
+    num_results = len(search_results)
+    if num_results:
+        print(f"Found {num_results} search results related to '{query}':")
+        print("Opening the first search result in a new tab and the search results in another...")
+
+        # Open the search results in the default browser
+        search_results_url = f'https://www.google.com/search?q={query}'
+        webbrowser.open_new_tab(search_results_url)
+
+        # Open the first search result in a new tab
+        search_result_url = search_results[0]
+        print(f"Opening URL: {search_result_url}")
+        webbrowser.open_new_tab(search_result_url)
+    else:
+        print(f"No search results found related to '{query}'.")
+
+
+def search_google(query):
+    # Format the query for the Google search URL
     query = query.replace(' ', '+')
 
-    # Send a GET request to the Reuters search URL
-    url = f'https://www.bbc.co.uk/search?q={query}&d=HOMEPAGE_GNL'
-    response = requests.get(url)
+    # Send a GET request to the Google search URL
+    url = f'https://www.google.com/search?q={query}'
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36'
+    }
+    response = requests.get(url, headers=headers)
 
     # Parse the HTML content using BeautifulSoup
     soup = BeautifulSoup(response.content, 'html.parser')
 
-    # Find all the article links in the search results
-    article_links = soup.find_all(
-        'a', {'class': 'ssrcss-6arcww-PromoHeadline e1f5wbog5'})
+    # Find all the search result links in the search results
+    search_result_links = soup.select('div.g > div > div.rc > div.r > a[href]')
 
-    # Print the article links
-    if article_links:
-        print(f"Found {len(article_links)} articles related to '{query}':")
-        for link in article_links:
-            print(link['href'])
+    # Print the number of search results found
+    num_results = len(search_result_links)
+    if num_results:
+        print(f"Found {num_results} search results related to '{query}':")
+        print("Opening the first search result in a new tab and the search results in another...")
+
+        # Open the search results in the default browser
+        webbrowser.open_new_tab(url)
+
+        # Open the first search result in a new tab
+        href = search_result_links[0]['href']
+        if href.startswith('/url?q='):
+            href = href[7:]
+        print(f"Opening URL: {href}")
+        webbrowser.open_new_tab(href)
     else:
-        print(f"No articles found related to '{query}'.")
-    webbrowser.open_new_tab(url)
+        print(f"No search results found related to '{query}'.")
 
 
 while True:
@@ -98,16 +139,20 @@ while True:
     print(f"processed_input = {processed_input}")
 
     # Convert the preprocessed input to a numerical representation using TfidfVectorizer
-    input_vector = vectorizer.transform([processed_input])
-
-    # Print the input_vector to check if the TfidfVectorizer is working correctly DEBUG
-    print(f"input_vector = {input_vector}")
+    input_vector = vectorizer.transform([processed_input]).toarray()
 
     # Make predictions on the input vector
     preds = model.predict(input_vector)
 
+    print("**********PRINTING THE DEBUGGING INFORMATION*****************")
+    # Print the input_vector to check if the TfidfVectorizer is working correctly DEBUG
+    print(f"input_vector = {input_vector}")
+
     # Print the preds to check the model prediction DEBUG
     print(f"preds = {preds}")
+
+    # Print the preds[0] to check the model prediction DEBUG
+    print(f"preds[0] = {preds[0]}")
 
     print("printing the probability of the prediction")
     # Print the probability of the prediction
@@ -116,17 +161,25 @@ while True:
     print("printing the prediction")
     # Print the prediction
     print(model.predict(input_vector))
+    print("**********PRINTING THE DEBUGGING INFORMATION*****************")
 
     # Print the prediction
-    if preds[0] < 0.7:
-        print("The phrase is possibly fake.")
+    if preds[0] < 0.5:
+        print("The phrase is possibly fake. This answer is based on the probability of the prediction.")
     else:
-        print("The phrase is possibly real.")
+        print("The phrase is possibly real. This answer is based on the probability of the prediction.")
 
     # Ask the user if they want to search for the phrase in Reuters or BBC
     search_input = input(
-        "Do you want to search for this phrase in Reuters / BBC? (R for Reuters/B for BBC): ")
-    if search_input.lower() == 'R':
+        "Do you want to search for this phrase in Reuters / BBC? (R for Reuters/B for BBC/G for GOOGLE/Q for QUITTING THE PROGRAM): ")
+    print(search_input)
+    if search_input.lower() == 'r':
         search_reuters(user_input)
-    elif search_input.lower() == 'B':
+    elif search_input.lower() == 'b':
         search_bbc(user_input)
+    elif search_input.lower() == 'g':
+        search_google(user_input)
+    elif search_input.lower() == 'q':
+        break
+    else:
+        print("Invalid input.")
