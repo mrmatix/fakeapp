@@ -1,4 +1,5 @@
 import tkinter as tk
+from tkinter import ttk
 import joblib
 import re
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -39,19 +40,24 @@ class Application(tk.Frame):
         self.master = master
         self.pack()
         self.create_widgets()
+        self.dark_mode = False
 
     def create_widgets(self):
 
         # Change size to 1024 x 768
         self.master.geometry("1024x768")
 
-        # Change the background color to lightgrey
-        self.master.configure(background="#F5F5F5")
+        # Add a button to switch between light mode and dark mode
+        # set the theme to "clam"
+        self.mode_button = tk.Button(
+            self, text="Light Mode", command=self.change_mode)
+        self.mode_button.pack(side="top", anchor="ne")
 
-        # make the same background color as the parent
-        self.configure(background=self.master.cget("background"))
+        style = ttk.Style()
+        style.theme_use('clam')
 
-        # Change the title of the window
+        style.theme_names()
+
         self.master.title("Fake Reader")
 
         # Add a logo to the window
@@ -117,6 +123,16 @@ class Application(tk.Frame):
         self.quit_button = tk.Button(
             self, text="Quit", command=self.master.destroy, bg='red', fg='white', font=("Helvetica", 14), width=10)
         self.quit_button.pack(side="right", padx=5)
+
+    def change_mode(self):
+        if self.dark_mode:
+            self.mode_button.config(text="Light Mode")
+            self.config(bg="#F5F5F5")
+            self.dark_mode = False
+        else:
+            self.mode_button.config(text="Dark Mode")
+            self.config(bg="#121212")
+            self.dark_mode = True
 
     def show_about(self):
         # Create a new window
@@ -261,7 +277,7 @@ class Application(tk.Frame):
 
     def search_nytimes(self):
         query = self.query_entry.get()
-        # Format the query for the NY Times search URL
+        # Format the query  for the NY Times search URL
         query_text = query.replace(' ', '+')
 
         # Send a GET request to the NY Times search URL
@@ -319,7 +335,7 @@ class Application(tk.Frame):
         preds = model.predict(input_vector)
 
         # Show prediction
-        if preds[0] < 0.5:
+        if preds[0] < 0.7:
             prediction_str = "The phrase is possibly fake. This answer is based on the probability of the prediction."
         else:
             prediction_str = "The phrase is possibly real. This answer is based on the probability of the prediction."
